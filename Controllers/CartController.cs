@@ -1,7 +1,7 @@
 ﻿using FoodOrderApi.Dto;
 using FoodOrderApi.Models;
+using FoodOrderApi.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FoodOrderApi.Controllers
 {
@@ -9,11 +9,11 @@ namespace FoodOrderApi.Controllers
     [ApiController]
     public class CartController : ControllerBase
     {
-        private readonly YwnacrjeAfoodContext _context;
+        private readonly CartService _cartService;
 
-        public CartController(YwnacrjeAfoodContext context)
+        public CartController(CartService cartService)
         {
-            _context = context;
+            _cartService = cartService;
         }
 
         /// <summary>
@@ -25,47 +25,8 @@ namespace FoodOrderApi.Controllers
         [HttpGet("{type}/{id}")]
         public async Task<IActionResult> Get(string type, int id)
         {
-            try
-            {
-                switch (type)
-                {
-                    case "all":
-                        {
-                            var carts = await _context.Carts.Include(c => c.Customer).ToListAsync();
-                            if (carts.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(carts);
-                        }
-                    case "id":
-                        {
-                            var carts = await _context.Carts.Include(c => c.Customer).Where(c => c.CartId == id).ToListAsync();
-                            if (carts.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(carts);
-                        }
-                    case "customer":
-                        {
-                            var carts = await _context.Carts.Include(c => c.Customer).Where(c => c.CustomerId == id).ToListAsync();
-                            if (carts.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(carts);
-                        }
-                    default:
-                        {
-                            return BadRequest();
-                        }
-                }
-            }
-            catch(Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            List<Cart> carts = await _cartService.Get(type, id);
+            return Ok(carts);
         }
 
         /// <summary>
@@ -76,24 +37,8 @@ namespace FoodOrderApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Insert([FromBody] CartDto cartDto)
         {
-            try
-            {
-                if(cartDto == null)
-                {
-                    return BadRequest("Cart is NULL");
-                }
-                var cart = new Cart
-                {
-                    CustomerId = cartDto.CustomerId
-                };
-                await _context.AddAsync(cart);
-                await _context.SaveChangesAsync();
-                return Ok(cart.CartId);
-            }
-            catch(Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            int cartId = await _cartService.Insert(cartDto);
+            return Ok(cartId);
         }
 
         /// <summary>
@@ -104,21 +49,8 @@ namespace FoodOrderApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                var existCart = await _context.Carts.FindAsync(id);
-                if (existCart == null)
-                {
-                    return NotFound($"Cart with ID {id} not found.");
-                }
-                _context.Carts.Remove(existCart);
-                await _context.SaveChangesAsync();
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            await _cartService.Delete(id);
+            return Ok();
         }
     }
 

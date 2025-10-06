@@ -1,8 +1,7 @@
 ﻿using FoodOrderApi.Dto;
 using FoodOrderApi.Models;
-using Microsoft.AspNetCore.Http;
+using FoodOrderApi.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FoodOrderApi.Controllers
 {
@@ -10,11 +9,11 @@ namespace FoodOrderApi.Controllers
     [ApiController]
     public class OrderDetailController : ControllerBase
     {
-        private readonly YwnacrjeAfoodContext _context;
+        private readonly OrderDetailService _detailService;
 
-        public OrderDetailController(YwnacrjeAfoodContext context)
+        public OrderDetailController(OrderDetailService detailService)
         {
-            _context = context;
+            _detailService = detailService;
         }
 
         /// <summary>
@@ -26,56 +25,8 @@ namespace FoodOrderApi.Controllers
         [HttpGet("{type}/{id}")]
         public async Task<IActionResult> Get(string type, int id)
         {
-            try
-            {
-                switch (type)
-                {
-                    case "all":
-                        {
-                            var details = await _context.Orderdetails.Include(d => d.Food).ToListAsync();
-                            if (details.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(details);
-                        }
-                    case "id":
-                        {
-                            var details = await _context.Orderdetails.Include(d => d.Food).Where(d => d.DetailId == id).ToListAsync();
-                            if (details.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(details);
-                        }
-                    case "order":
-                        {
-                            var details = await _context.Orderdetails.Include(d => d.Food).Where(d => d.OrderId == id).ToListAsync();
-                            if (details.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(details);
-                        }
-                    case "customer":
-                        {
-                            var details = await _context.Orderdetails.Include(d => d.Food).Where(d => d.Order.CustomerId == id).ToListAsync();
-                            if (details.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(details);
-                        }
-                    default:
-                        {
-                            return BadRequest();
-                        }
-                }
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            List<Orderdetail> details = await _detailService.Get(type, id);
+            return Ok(details);
         }
 
         /// <summary>
@@ -86,26 +37,8 @@ namespace FoodOrderApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Insert([FromBody] OrderDetailDto detailDto)
         {
-            try
-            {
-                if (detailDto == null)
-                {
-                    return BadRequest("Detail is NULL");
-                }
-                var detail = new Orderdetail
-                {
-                    OrderId = detailDto.OrderId,
-                    FoodId = detailDto.FoodId,
-                    Quantity = detailDto.Quantity
-                };
-                await _context.AddAsync(detail);
-                await _context.SaveChangesAsync();
-                return Ok(detail.DetailId);
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            int detailId = await _detailService.Insert(detailDto);
+            return Ok(detailId);
         }
 
         /// <summary>
@@ -117,28 +50,8 @@ namespace FoodOrderApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] OrderDetailDto detailDto)
         {
-            try
-            {
-                if (detailDto == null)
-                {
-                    return BadRequest("Detail is NULL");
-                }
-                var existDetail = await _context.Orderdetails.FindAsync(id);
-                if (existDetail == null)
-                {
-                    return NotFound($"Detail with ID {id} not found");
-                }
-                existDetail.OrderId = detailDto.OrderId;
-                existDetail.FoodId = detailDto.FoodId;
-                existDetail.Quantity = detailDto.Quantity;
-                _context.Update(existDetail);
-                await _context.SaveChangesAsync();
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            await _detailService.Update(id, detailDto);
+            return Ok();
         }
 
         /// <summary>
@@ -150,43 +63,8 @@ namespace FoodOrderApi.Controllers
         [HttpDelete("{type}/{id}")]
         public async Task<IActionResult> Delete(string type, int id)
         {
-            try
-            {
-                switch(type)
-                {
-                    case "id":
-                        {
-                            var existDetail = await _context.Orderdetails.FindAsync(id);
-                            if (existDetail == null)
-                            {
-                                return NotFound($"Detail with ID {id} not found");
-                            }
-                            _context.Orderdetails.Remove(existDetail);
-                            await _context.SaveChangesAsync();
-                            return Ok();
-                        }
-                    case "customer":
-                        {
-                            var existDetails = await _context.Orderdetails.Where(d => d.Order.CustomerId == id).ToListAsync();
-                            if(existDetails.Count == 0)
-                            {
-                                return NotFound($"Detail with customer ID {id} not found");
-                            }
-                            _context.Orderdetails.RemoveRange(existDetails);
-                            await _context.SaveChangesAsync();
-                            return Ok();
-                        }
-                    default:
-                        {
-                            return BadRequest();
-                        }
-                }
-                
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            await _detailService.Delete(type, id);
+            return Ok();
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using FoodOrderApi.Dto;
 using FoodOrderApi.Models;
+using FoodOrderApi.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FoodOrderApi.Controllers
 {
@@ -9,11 +9,11 @@ namespace FoodOrderApi.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
-        private readonly YwnacrjeAfoodContext _context;
+        private readonly CategoryService _categoryService;
 
-        public CategoryController(YwnacrjeAfoodContext context)
+        public CategoryController(CategoryService categoryService)
         {
-            _context = context;
+            _categoryService = categoryService;
         }
 
         /// <summary>
@@ -25,38 +25,8 @@ namespace FoodOrderApi.Controllers
         [HttpGet("{type}/{id}")]
         public async Task<IActionResult> Get(string type, int id)
         {
-            try
-            {
-                switch (type)
-                {
-                    case "all":
-                        {
-                            var categories = await _context.Categories.ToListAsync();
-                            if (categories.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(categories);
-                        }
-                    case "id":
-                        {
-                            var categories = await _context.Categories.Where(c => c.CategoryId == id).ToListAsync();
-                            if (categories.Count == 0)
-                            {
-                                return NotFound();
-                            }
-                            return Ok(categories);
-                        }
-                    default:
-                        {
-                            return BadRequest();
-                        }
-                }
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            List<Category> categories = await _categoryService.Get(type, id);
+            return Ok(categories);
         }
 
         /// <summary>
@@ -67,25 +37,8 @@ namespace FoodOrderApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Insert([FromBody] CategoryDto categoryDto)
         {
-            try
-            {
-                if (categoryDto == null)
-                {
-                    return BadRequest("Category is NULL");
-                }
-                var category = new Category
-                {
-                    CategoryName = categoryDto.CategoryName,
-                    CategoryImgUrl = categoryDto.CategoryImgUrl
-                };
-                await _context.AddAsync(category);
-                await _context.SaveChangesAsync();
-                return Ok(category.CategoryId);
-            } 
-            catch(Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            int categoryId = await _categoryService.Insert(categoryDto);
+            return Ok(categoryId);
         }
 
         /// <summary>
@@ -97,27 +50,8 @@ namespace FoodOrderApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryDto categoryDto)
         {
-            try
-            {
-                if (categoryDto == null)
-                {
-                    return BadRequest("Category is NULL.");
-                }
-                var existCategory = await _context.Categories.FindAsync(id);
-                if (existCategory == null)
-                {
-                    return NotFound($"Category with ID {id} not found");
-                }
-                existCategory.CategoryName = categoryDto.CategoryName;
-                existCategory.CategoryImgUrl = categoryDto.CategoryImgUrl;
-                _context.Categories.Update(existCategory);
-                await _context.SaveChangesAsync();
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            await _categoryService.Update(id, categoryDto);
+            return Ok();
         }
 
         /// <summary>
@@ -128,21 +62,8 @@ namespace FoodOrderApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
-            {
-                var existCategory = await _context.Categories.FindAsync(id);
-                if(existCategory == null)
-                {
-                    return NotFound($"Category with ID {id} not found.");
-                }
-                _context.Categories.Remove(existCategory);
-                await _context.SaveChangesAsync();
-                return Ok();
-            } 
-            catch (Exception e)
-            {
-                return StatusCode(500, $"Error: {e.Message}");
-            }
+            await _categoryService.Delete(id);
+            return Ok();
         }
     }
 }

@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using FoodOrderApi.Models;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 
-namespace FoodOrderApi.Models;
+namespace FoodOrderApi.Repositories;
 
-public partial class YwnacrjeAfoodContext : DbContext
+public partial class AppDbContext : DbContext
 {
-    public YwnacrjeAfoodContext()
+    public AppDbContext()
     {
     }
 
-    public YwnacrjeAfoodContext(DbContextOptions<YwnacrjeAfoodContext> options)
+    public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
